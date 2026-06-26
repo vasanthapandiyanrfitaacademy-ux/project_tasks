@@ -2,38 +2,61 @@ pipeline {
 agent any
 
 ```
+environment {
+    IMAGE_NAME = "vasanthapandiyan/myapp"
+    CONTAINER_NAME = "myapp"
+}
+
 stages {
 
-    stage('Git Checkout') {
+    stage('Checkout Code') {
         steps {
-            git 'https://github.com/user/myapp.git'
+            git 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
         }
     }
 
     stage('Build Docker Image') {
         steps {
-            sh 'docker build -t myapp:${BUILD_NUMBER} .'
-        }
-    }
-
-    stage('Push Image') {
-        steps {
             sh '''
-            docker tag myapp:${BUILD_NUMBER} dockerhubuser/myapp:${BUILD_NUMBER}
-            docker push dockerhubuser/myapp:${BUILD_NUMBER}
+            docker build -t $IMAGE_NAME:${BUILD_NUMBER} .
             '''
         }
     }
 
-    stage('Deploy') {
+    stage('Docker Login') {
+        steps {
+            withCredentials([usernamePassword(
+                credentialsId: 'docker-creds',
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+            )]) {
+                sh '''
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                '''
+            }
+        }
+    }
+
+    stage('Push Image to Docker Hub') {
         steps {
             sh '''
-            ssh ubuntu@server "
-            docker pull dockerhubuser/myapp:${BUILD_NUMBER}
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d --name myapp -p 80:5000 dockerhubuser/myapp:${BUILD_NUMBER}
-            "
+            docker tag $IMAGE_NAME:${BUILD_NUMBER} $IMAGE_NAME:latest
+            docker push $IMAGE_NAME:${BUILD_NUMBER}
+            docker push $IMAGE_NAME:latest
+            '''
+        }
+    }
+
+    stage('Deploy Locally') {
+        steps {
+            sh '''
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+
+            docker run -d \
+            --name $CONTAINER_NAME \
+            -p 8501:8501 \
+            $IMAGE_NAME:${BUILD_NUMBER}
             '''
         }
     }
