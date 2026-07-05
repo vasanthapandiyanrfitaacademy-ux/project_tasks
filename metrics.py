@@ -1,10 +1,12 @@
-from prometheus_client import start_http_server
-import time
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Metrics OK")
 
 if __name__ == "__main__":
-    print("✅ Metrics running on 8000")
-
-    start_http_server(8000)
-
-    while True:
-        time.sleep(5)
+    server = HTTPServer(("0.0.0.0", 8000), Handler)
+    print("Metrics server running on port 8000")
+    server.serve_forever()
