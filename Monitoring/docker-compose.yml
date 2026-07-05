@@ -9,6 +9,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    restart: always
 
   grafana:
     image: grafana/grafana
@@ -17,12 +18,14 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
+    restart: always
 
   node-exporter:
     image: prom/node-exporter
     container_name: node-exporter
     ports:
       - "9100:9100"
+    restart: always
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor
@@ -34,3 +37,24 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+    restart: always
+
+  # ✅ YOUR METRICS SERVICE
+  metrics:
+    build: .
+    container_name: metrics_service
+    command: python -u metrics.py
+    ports:
+      - "8000:8000"
+    restart: always
+
+  # ✅ YOUR STREAMLIT APP
+  streamlit:
+    build: .
+    container_name: streamlit_service
+    command: streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=8501
+    ports:
+      - "8501:8501"
+    depends_on:
+      - metrics
+    restart: always
