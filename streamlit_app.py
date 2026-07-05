@@ -2,13 +2,26 @@ import streamlit as st
 from time import sleep
 from navigation import make_sidebar
 
-# ✅ Prometheus metrics ONLY (no server)
-from prometheus_client import Counter, Gauge
+# ✅ Prometheus safe import
+from prometheus_client import Counter, Gauge, REGISTRY
 
-login_success = Counter('login_success_total', 'Total successful logins')
-login_failure = Counter('login_failure_total', 'Total failed logins')
-active_users = Gauge('active_users', 'Currently active users')
+# ✅ FIX: Create metrics safely (no duplicate error)
+def get_metric(name, metric_type, description):
+    try:
+        if metric_type == "counter":
+            return Counter(name, description)
+        elif metric_type == "gauge":
+            return Gauge(name, description)
+    except ValueError:
+        # already exists → reuse
+        return REGISTRY._names_to_collectors[name]
 
+# ✅ Metrics
+login_success = get_metric('login_success_total', 'counter', 'Total successful logins')
+login_failure = get_metric('login_failure_total', 'counter', 'Total failed logins')
+active_users = get_metric('active_users', 'gauge', 'Currently active users')
+
+# ✅ Users
 users = {
     "Vasanth": "vasu123",
     "Admin": "admin123"
@@ -21,12 +34,17 @@ st.title("Pharmalytics Login")
 username = st.text_input("Username")
 password = st.text_input("Password", type="password")
 
+# ✅ FIX: Avoid multiple increments on reload
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
 if st.button("Log in"):
     if username in users and users[username] == password:
-        st.session_state.logged_in = True
+        if not st.session_state.logged_in:
+            login_success.inc()
+            active_users.inc()
 
-        login_success.inc()
-        active_users.inc()
+        st.session_state.logged_in = True
 
         st.success(f"Welcome {username}")
         sleep(0.5)
