@@ -7,6 +7,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout code') {
             steps {
                 git branch: 'main',
@@ -14,33 +15,30 @@ pipeline {
             }
         }
 
-        stage('Old Container Remove') {
+        stage('Cleanup Old Containers & Images') {
             steps {
-                sh """
-                    echo "Removing old container"
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
-                    docker container prune -f || true
-                """
-            }
-        }
+                sh '''
+                    echo "Stopping containers using this image..."
+                    docker ps -a --filter "ancestor=${IMAGE_NAME}" -q | xargs -r docker stop
+                    docker ps -a --filter "ancestor=${IMAGE_NAME}" -q | xargs -r docker rm
 
-        stage('Old Images Remove') {
-            steps {
-                sh """
-                    echo "Removing old images"
-                    docker images ${IMAGE_NAME} -q | xargs -r docker rmi -f
-                    docker image prune -af || true
-                """
+                    echo "Removing old container (by name)..."
+                    docker rm -f ${CONTAINER_NAME} || true
+
+                    echo "Removing old images..."
+                    docker images ${IMAGE_NAME} -q | xargs -r docker rmi -f || true
+
+                    docker system prune -af || true
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh """
+                sh '''
                     docker build --no-cache -t ${IMAGE_NAME}:${BUILD_NUMBER} .
                     docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
-                """
+                '''
             }
         }
 
@@ -51,41 +49,42 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh """
-                        echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
-                    """
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    '''
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh """
+                sh '''
                     docker push ${IMAGE_NAME}:${BUILD_NUMBER}
                     docker push ${IMAGE_NAME}:latest
-                """
+                '''
             }
         }
 
-        stage('Deploy a Container') {
+        stage('Deploy Container') {
             steps {
-                sh """
-                    echo "Running New Container...."
+                sh '''
+                    echo "Starting new container..."
+
                     docker run -d \
                         --name ${CONTAINER_NAME} \
                         -p 8501:8501 \
                         ${IMAGE_NAME}:${BUILD_NUMBER}
-                """
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully.'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo '❌ Pipeline failed!'
         }
     }
 }
