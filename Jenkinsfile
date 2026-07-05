@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "vasanthapandiyan/myapp"
+        COMPOSE_FILE = "docker-compose.yml"
     }
 
     stages {
@@ -11,15 +12,6 @@ pipeline {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh '''
-                    docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
-                    docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
-                '''
             }
         }
 
@@ -37,6 +29,15 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                    docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
+                '''
+            }
+        }
+
         stage('Push Docker Image') {
             steps {
                 sh '''
@@ -46,7 +47,7 @@ pipeline {
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy using Docker Compose') {
             steps {
                 sh '''
                     echo "Stopping old containers..."
@@ -55,8 +56,8 @@ pipeline {
                     echo "Pull latest image..."
                     docker pull ${IMAGE_NAME}:latest
 
-                    echo "Starting services..."
-                    docker compose up -d
+                    echo "Starting containers..."
+                    docker compose up -d --build
 
                     echo "Deployment completed!"
                 '''
@@ -66,10 +67,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo '✅ SUCCESS: Application deployed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed!'
+            echo '❌ FAILURE: Pipeline failed!'
         }
     }
 }

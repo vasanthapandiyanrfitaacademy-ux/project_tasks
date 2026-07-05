@@ -2,6 +2,14 @@ version: '3.8'
 
 services:
 
+  app:
+    build: .
+    container_name: python_project
+    ports:
+      - "8501:8501"
+      - "8000:8000"
+    restart: always
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
@@ -9,6 +17,8 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    depends_on:
+      - app
     restart: always
 
   grafana:
@@ -37,21 +47,4 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-    restart: always
-  metrics:
-    image: vasanthapandiyan/myapp:latest
-    container_name: metrics
-    command: python -u metrics.py
-    ports:
-      - "8000:8000"
-    restart: always
-
-  streamlit:
-    image: vasanthapandiyan/myapp:latest
-    container_name: python_project
-    command: streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=8501
-    ports:
-      - "8501:8501"
-    depends_on:
-      - metrics
     restart: always
