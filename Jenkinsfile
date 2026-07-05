@@ -68,23 +68,22 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 sh '''
-                    echo "Starting new container..."
+                   echo "Starting new container with metrics..."
 
                     docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        -p 8501:8501 \
-                        ${IMAGE_NAME}:${BUILD_NUMBER}
-                '''
+                    --name ${CONTAINER_NAME} \
+                    -p 8501:8501 \
+                    -p 8000:8000 \
+                   ${IMAGE_NAME}:${BUILD_NUMBER}
+                  '''
             }
-        }
-    }
-
+       }
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo ' Pipeline completed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed!'
+            echo ' Pipeline failed!'
         }
     }
 }
