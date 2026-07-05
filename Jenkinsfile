@@ -3,17 +3,14 @@ pipeline {
 
     environment {
         IMAGE_NAME = "vasanthapandiyan/myapp"
-        CONTAINER_NAME = "myapp_container"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git(
-                    branch: 'main',
+                git branch: 'main',
                     url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
-                )
             }
         }
 
@@ -51,25 +48,23 @@ pipeline {
             }
         }
 
-        stage('Deploy Container') {
+        stage('Deploy with Docker Compose') {
             steps {
                 sh '''
-                    echo "Stopping existing container..."
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
+                    echo "Stopping existing containers..."
+                    docker compose down || true
+
+                    echo "Removing old application image (optional)..."
+                    docker rmi ${IMAGE_NAME}:latest || true
 
                     echo "Pulling latest image..."
-                    docker pull ${IMAGE_NAME}:latest
+                    docker pull ${IMAGE_NAME}:latest || true
 
-                    echo "Starting new container..."
-                    docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        -p 8501:8501 \
-                        -p 8000:8000 \
-                        --restart always \
-                        ${IMAGE_NAME}:latest
+                    echo "Starting all services..."
+                    docker compose up -d --build
 
-                    echo "Deployment completed successfully."
+                    echo "Running containers:"
+                    docker ps
                 '''
             }
         }
@@ -77,15 +72,15 @@ pipeline {
 
     post {
         success {
-            echo "SUCCESS: Application deployed successfully."
+            echo 'SUCCESS: Docker Compose deployment completed.'
         }
 
         failure {
-            echo "FAILURE: Pipeline execution failed."
+            echo 'FAILURE: Pipeline failed.'
         }
 
         always {
-            echo "Pipeline execution finished."
+            sh 'docker logout || true'
         }
     }
 }
