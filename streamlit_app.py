@@ -23,16 +23,17 @@ active_users = get_metric('active_users', 'gauge', 'Currently active users')
 
 # ✅ Users
 users = {
-    "Vasanth": "vasu123",
-    "Admin": "admin123"
+    "vasanth": "vasu123",
+    "admin": "admin123"
 }
 
 make_sidebar()
 
-st.title("Pharmalytics Login")
+st.title("Pharmalytcs Login")
 
 username = st.text_input("Username")
 password = st.text_input("Password", type="password")
+
 
 # ✅ FIX: Avoid multiple increments on reload
 if "logged_in" not in st.session_state:
