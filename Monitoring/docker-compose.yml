@@ -1,32 +1,57 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  app:
+    build: .
+    container_name: python_project
+    ports:
+      - "8501:8501"
+      - "8000:8000"
+    restart: always
 
-app:
-build: .
-container_name: myapp
-ports:
-- "8501:8501"
-- "8000:8000"
-restart: always
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - app
+    restart: always
 
-prometheus:
-image: prom/prometheus
-container_name: prometheus
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: always
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    pid: host
+    network_mode: host
+    restart: always
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    container_name: cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    restart: always
+
 volumes:
-- ./prometheus.yml:/etc/prometheus/prometheus.yml
-ports:
-- "9090:9090"
-restart: always
-
-grafana:
-image: grafana/grafana
-container_name: grafana
-volumes:
-- grafana_data:/var/lib/grafana
-ports:
-- "3000:3000"
-restart: always
-
-volumes:
-grafana_data:
+  grafana_data:
