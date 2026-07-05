@@ -7,5 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# ✅ THIS LINE IS THE MOST IMPORTANT
-CMD ["sh", "-c", "python -u metrics.py & exec streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=8501"]
+CMD ["sh", "-c", "python -u metrics.py & sleep 2 && streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=8501"]
