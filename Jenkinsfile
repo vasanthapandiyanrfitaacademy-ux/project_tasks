@@ -7,13 +7,14 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
+       stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
-            }
-        }
+              deleteDir()   // 🔥 IMPORTANT: clears old workspace
 
+              git branch: 'main',
+            url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
+           }
+        }
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(
