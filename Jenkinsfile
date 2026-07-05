@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = "vasanthapandiyan/myapp"
-        COMPOSE_FILE = "docker-compose.yml"
     }
 
     stages {
@@ -29,7 +28,7 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Image') {
             steps {
                 sh '''
                     docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
@@ -38,7 +37,7 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Image') {
             steps {
                 sh '''
                     docker push ${IMAGE_NAME}:${BUILD_NUMBER}
@@ -47,9 +46,12 @@ pipeline {
             }
         }
 
-        stage('Deploy using Docker Compose') {
+        stage('Deploy') {
             steps {
                 sh '''
+                    echo "Move to workspace..."
+                    cd $WORKSPACE
+
                     echo "Stopping old containers..."
                     docker compose down || true
 
@@ -57,7 +59,7 @@ pipeline {
                     docker pull ${IMAGE_NAME}:latest
 
                     echo "Starting containers..."
-                    docker compose up -d --build
+                    docker compose up -d
 
                     echo "Deployment completed!"
                 '''
