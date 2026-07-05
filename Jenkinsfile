@@ -18,17 +18,12 @@ pipeline {
         stage('Cleanup Old Containers & Images') {
             steps {
                 sh '''
-                    echo "Stopping containers using this image..."
-                    docker ps -a --filter "ancestor=${IMAGE_NAME}" -q | xargs -r docker stop
-                    docker ps -a --filter "ancestor=${IMAGE_NAME}" -q | xargs -r docker rm
-
-                    echo "Removing old container (by name)..."
-                    docker rm -f ${CONTAINER_NAME} || true
+                    echo "Stopping old container..."
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
 
                     echo "Removing old images..."
                     docker images ${IMAGE_NAME} -q | xargs -r docker rmi -f || true
-
-                    docker system prune -af || true
                 '''
             }
         }
@@ -68,16 +63,24 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 sh '''
-                   echo "Starting new container with metrics..."
+                    echo "Deploying container..."
+
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
 
                     docker run -d \
-                    --name ${CONTAINER_NAME} \
-                    -p 8501:8501 \
-                    -p 8000:8000 \
-                   ${IMAGE_NAME}:${BUILD_NUMBER}
-                  '''
+                        --name ${CONTAINER_NAME} \
+                        --restart always \
+                        -p 8501:8501 \
+                        -p 8000:8000 \
+                        ${IMAGE_NAME}:${BUILD_NUMBER}
+
+                    echo "Deployment completed!"
+                '''
             }
-       }
+        }
+    }
+
     post {
         success {
             echo ' Pipeline completed successfully!'
