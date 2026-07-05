@@ -16,54 +16,49 @@ pipeline {
 
         stage('Docker Login') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'docker-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
                     sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        echo "$PASS" | docker login -u "$USER" --password-stdin
                     '''
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Image') {
             steps {
                 sh '''
+                    echo "Building image..."
                     docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
                     docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
                 '''
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Image') {
             steps {
                 sh '''
+                    echo "Pushing image..."
                     docker push ${IMAGE_NAME}:${BUILD_NUMBER}
                     docker push ${IMAGE_NAME}:latest
                 '''
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy Full Stack (Docker Compose)') {
             steps {
                 sh '''
-                    echo "Stopping existing containers..."
+                    echo "Stopping old containers..."
                     docker compose down || true
 
-                    echo "Removing old application image (optional)..."
-                    docker rmi ${IMAGE_NAME}:latest || true
+                    echo "Starting full monitoring stack..."
 
-                    echo "Pulling latest image..."
-                    docker pull ${IMAGE_NAME}:latest || true
-
-                    echo "Starting all services..."
                     docker compose up -d --build
 
-                    echo "Running containers:"
+                    echo "Deployment completed"
                     docker ps
                 '''
             }
@@ -72,11 +67,11 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Docker Compose deployment completed.'
+            echo " FULL CI/CD SUCCESS: App + Monitoring deployed"
         }
 
         failure {
-            echo 'FAILURE: Pipeline failed.'
+            echo " PIPELINE FAILED"
         }
 
         always {
