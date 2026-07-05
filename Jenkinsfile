@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
+                url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
             }
         }
 
@@ -31,7 +31,6 @@ pipeline {
         stage('Build Image') {
             steps {
                 sh '''
-                    echo "Building image..."
                     docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
                     docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
                 '''
@@ -41,24 +40,27 @@ pipeline {
         stage('Push Image') {
             steps {
                 sh '''
-                    echo "Pushing image..."
                     docker push ${IMAGE_NAME}:${BUILD_NUMBER}
                     docker push ${IMAGE_NAME}:latest
                 '''
             }
         }
 
-        stage('Deploy Full Stack (Docker Compose)') {
+        stage('Deploy with Docker Compose') {
             steps {
                 sh '''
-                    echo "Stopping old containers..."
+                    echo "Fixing old containers..."
+
                     docker compose down || true
+                    docker container prune -f
 
-                    echo "Starting full monitoring stack..."
+                    echo "Pulling latest images..."
+                    docker compose pull
 
-                    docker compose up -d --build
+                    echo "Starting full stack..."
+                    docker compose up -d
 
-                    echo "Deployment completed"
+                    echo "Containers status:"
                     docker ps
                 '''
             }
@@ -67,11 +69,11 @@ pipeline {
 
     post {
         success {
-            echo " FULL CI/CD SUCCESS: App + Monitoring deployed"
+            echo "SUCCESS  FULL CI/CD WORKING"
         }
 
         failure {
-            echo " PIPELINE FAILED"
+            echo "FAILED  Check logs"
         }
 
         always {
