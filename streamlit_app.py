@@ -4,7 +4,7 @@ from navigation import make_sidebar
 
 make_sidebar()
 
-st.title("Welcome to Pharmalytics")
+st.title("Welcome black to Pharmalytics powered by vasanth")
 
 st.write("Please log in to continue (username `guest`, password `guest123`).")
 
