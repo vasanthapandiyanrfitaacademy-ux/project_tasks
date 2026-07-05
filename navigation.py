@@ -16,7 +16,7 @@ def get_current_page_name():
 
 def make_sidebar():
     with st.sidebar:
-        st.title("Pharmalytics")
+        st.title("Phar_vasanth_udesh")
         st.write("")
         st.write("")
 
