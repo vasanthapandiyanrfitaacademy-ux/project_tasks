@@ -38,20 +38,17 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     restart: always
-
-  # ✅ YOUR METRICS SERVICE
   metrics:
-    build: .
-    container_name: metrics_service
+    image: vasanthapandiyan/myapp:latest
+    container_name: metrics
     command: python -u metrics.py
     ports:
       - "8000:8000"
     restart: always
 
-  # ✅ YOUR STREAMLIT APP
   streamlit:
-    build: .
-    container_name: streamlit_service
+    image: vasanthapandiyan/myapp:latest
+    container_name: python_project
     command: streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=8501
     ports:
       - "8501:8501"

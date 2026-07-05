@@ -3,35 +3,21 @@ pipeline {
 
     environment {
         IMAGE_NAME = "vasanthapandiyan/myapp"
-        CONTAINER_NAME = "python_project"
     }
 
     stages {
 
-        stage('Checkout code') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
             }
         }
 
-        stage('Cleanup Old Containers & Images') {
-            steps {
-                sh '''
-                    echo "Stopping old container..."
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
-
-                    echo "Removing old images..."
-                    docker images ${IMAGE_NAME} -q | xargs -r docker rmi -f || true
-                '''
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 sh '''
-                    docker build --no-cache -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                    docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
                     docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
                 '''
             }
@@ -60,20 +46,17 @@ pipeline {
             }
         }
 
-        stage('Deploy Container') {
+        stage('Deploy with Docker Compose') {
             steps {
                 sh '''
-                    echo "Deploying container..."
+                    echo "Stopping old containers..."
+                    docker compose down || true
 
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
+                    echo "Pull latest image..."
+                    docker pull ${IMAGE_NAME}:latest
 
-                    docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        --restart always \
-                        -p 8501:8501 \
-                        -p 8000:8000 \
-                        ${IMAGE_NAME}:${BUILD_NUMBER}
+                    echo "Starting services..."
+                    docker compose up -d
 
                     echo "Deployment completed!"
                 '''
@@ -83,10 +66,10 @@ pipeline {
 
     post {
         success {
-            echo ' Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo ' Pipeline failed!'
+            echo '❌ Pipeline failed!'
         }
     }
 }
