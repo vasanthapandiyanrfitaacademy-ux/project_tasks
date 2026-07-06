@@ -2,37 +2,38 @@ services:
 
   app:
     build: .
-    container_name: python_project
+    container_name: streamlit_app
     ports:
       - "8501:8501"
-      - "8000:8000"
-    restart: always
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus
     container_name: prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
-    depends_on:
-      - app
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana
     container_name: grafana
     ports:
       - "3000:3000"
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    container_name: cadvisor
+    ports:
+      - "8081:8080"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter
     container_name: node-exporter
     ports:
       - "9100:9100"
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
-    privileged: true
-    ports:
-      - "8081:8080"
