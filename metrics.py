@@ -1,12 +1,13 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from prometheus_client import start_http_server, Counter, Gauge
+import time
 
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Metrics OK")
+login_success = Counter("login_success_total", "Successful logins")
+login_failure = Counter("login_failure_total", "Failed logins")
+active_users = Gauge("active_users", "Active users")
 
-if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", 8000), Handler)
-    print("Metrics server running on port 8000")
-    server.serve_forever()
+start_http_server(8000)
+
+print("Metrics server running on 8000")
+
+while True:
+    time.sleep(5)
