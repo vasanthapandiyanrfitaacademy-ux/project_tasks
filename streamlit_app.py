@@ -1,39 +1,38 @@
 import streamlit as st
-from prometheus_client import Counter, Gauge, start_http_server
+from prometheus_client import Counter, Gauge, start_http_server, REGISTRY
 import threading
 
 # ---------------------------
-# Start Prometheus server once
+# Start Prometheus server only once (global)
 # ---------------------------
-if "metrics_server_started" not in st.session_state:
-    def run_metrics():
+if "server_started" not in st.session_state:
+    def start_server():
         start_http_server(8000)
 
-    threading.Thread(target=run_metrics, daemon=True).start()
-    st.session_state.metrics_server_started = True
+    threading.Thread(target=start_server, daemon=True).start()
+    st.session_state.server_started = True
+
 
 # ---------------------------
-# Create metrics only once
+# Create metrics safely (avoid duplicate error)
 # ---------------------------
-if "login_success_metric" not in st.session_state:
-    st.session_state.login_success_metric = Counter(
-        "login_success_total",
-        "Total successful logins"
-    )
+def get_metric(name, metric_type, desc):
+    if name in REGISTRY._names_to_collectors:
+        return REGISTRY._names_to_collectors[name]
+    return metric_type(name, desc)
 
-    st.session_state.login_failure_metric = Counter(
-        "login_failure_total",
-        "Total failed logins"
-    )
 
-    st.session_state.active_users_metric = Gauge(
-        "active_users",
-        "Current active users"
-    )
+login_success = get_metric(
+    "login_success_total", Counter, "Total successful logins"
+)
 
-login_success = st.session_state.login_success_metric
-login_failure = st.session_state.login_failure_metric
-active_users = st.session_state.active_users_metric
+login_failure = get_metric(
+    "login_failure_total", Counter, "Total failed logins"
+)
+
+active_users = get_metric(
+    "active_users", Gauge, "Current active users"
+)
 
 # ---------------------------
 # Demo users
@@ -67,7 +66,10 @@ if not st.session_state.logged_in:
         if username in USERS and USERS[username] == password:
 
             login_success.inc()
-            active_users.inc()
+
+            # prevent multiple increments
+            if not st.session_state.logged_in:
+                active_users.inc()
 
             st.session_state.logged_in = True
             st.session_state.username = username
@@ -83,11 +85,18 @@ else:
     st.success(f"Welcome {st.session_state.username}")
 
     if st.button("Logout"):
-        active_users.dec()
+
+        if st.session_state.logged_in:
+            active_users.dec()
+
         st.session_state.logged_in = False
         st.session_state.username = ""
+
         st.success("Logged out")
 
+# ---------------------------
+# Debug info
+# ---------------------------
 st.markdown("---")
-st.write("Prometheus Metrics:")
-st.code("http://localhost:8000/metrics")
+st.write("Metrics URL:")
+st.code("http://YOUR-IP:8000/metrics")

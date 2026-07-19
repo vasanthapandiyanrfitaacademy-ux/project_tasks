@@ -10,7 +10,6 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 deleteDir()
-
                 git branch: 'main',
                     url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
             }
@@ -54,21 +53,24 @@ pipeline {
             steps {
                 sh '''
                     echo "Stopping old containers..."
-                    docker compose down || true
+                    docker compose down --remove-orphans || true
 
-                    echo "Removing stopped containers..."
+                    echo "Removing unused containers..."
                     docker container prune -f
 
-                    echo "Removing unused images..."
-                    docker image prune -f
+                    echo "Removing old unused images..."
+                    docker image prune -a -f
 
-                    echo "Pulling latest image..."
-                    docker compose pull
+                    echo "Pull latest image..."
+                    docker pull ${IMAGE_NAME}:latest
 
                     echo "Starting new containers..."
                     docker compose up -d --force-recreate
 
-                    echo "Current running containers:"
+                    echo "Cleaning dangling images..."
+                    docker image prune -f
+
+                    echo "Running containers:"
                     docker ps
 
                     echo "Available images:"
