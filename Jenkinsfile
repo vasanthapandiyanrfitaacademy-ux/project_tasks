@@ -48,26 +48,34 @@ pipeline {
         }
 
         stage('Deploy with Docker Compose') {
-            steps {
-                sh '''
-                    echo "Fixing old containers..."
+    steps {
+        sh '''
+            echo "Stopping old containers..."
+            docker compose down || true
 
-                    docker compose down || true
-                    docker container prune -f
+            echo "Removing unused containers..."
+            docker container prune -f
 
-                    echo "Pulling latest images..."
-                    docker compose pull
+            echo "Removing old images (except latest)..."
+            docker image prune -a -f
 
-                    echo "Starting full stack..."
-                    docker compose up -d
+            echo "Pulling latest image..."
+            docker compose pull
 
-                    echo "Containers status:"
-                    docker ps
-                '''
-            }
-        }
+            echo "Starting new containers..."
+            docker compose up -d --force-recreate
+
+            echo "Cleaning dangling images..."
+            docker image prune -f
+
+            echo "Current running containers:"
+            docker ps
+
+            echo "Available images:"
+            docker images
+        '''
     }
-
+}
     post {
         success {
             echo "SUCCESS  FULL CI/CD WORKING"
