@@ -1,28 +1,7 @@
 import streamlit as st
 from time import sleep
 from navigation import make_sidebar
-from prometheus_client import Counter, Gauge, REGISTRY
-
-# ---------------- SAFE METRIC CREATION ----------------
-def get_metric(name, metric):
-    if name in REGISTRY._names_to_collectors:
-        return REGISTRY._names_to_collectors[name]
-    return metric
-
-login_success = get_metric(
-    "login_success_total",
-    Counter("login_success_total", "Successful logins")
-)
-
-login_failure = get_metric(
-    "login_failure_total",
-    Counter("login_failure_total", "Failed logins")
-)
-
-active_users = get_metric(
-    "active_users",
-    Gauge("active_users", "Active users")
-)
+from metrics import login_success, login_failure, active_users
 
 # ---------------- UI ----------------
 make_sidebar()
