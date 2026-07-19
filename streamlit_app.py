@@ -2,7 +2,6 @@ import streamlit as st
 from time import sleep
 from navigation import make_sidebar
 from metrics import login_success, login_failure, active_users
-
 # ---------------- UI ----------------
 make_sidebar()
 

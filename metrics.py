@@ -1,6 +1,5 @@
 from prometheus_client import Counter, Gauge, start_http_server
 
-# Start Prometheus metrics server (http://localhost:8000/metrics)
 start_http_server(8000)
 
 # Metrics
