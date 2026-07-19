@@ -1,3 +1,5 @@
+version: '3'
+
 services:
 
   app:
@@ -5,15 +7,9 @@ services:
     container_name: streamlit_app
     ports:
       - "8501:8501"
+      - "8000:8000"   # 🔥 expose metrics
     restart: always
-
-  metrics:
-    build: .
-    container_name: metrics_service
-    command: python metrics.py
-    ports:
-      - "8000:8000"
-    restart: always
+    command: streamlit run streamlit_app.py
 
   prometheus:
     image: prom/prometheus:latest

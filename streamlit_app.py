@@ -1,12 +1,16 @@
 import streamlit as st
 from time import sleep
+import pandas as pd
 
-# ✅ import metrics (this starts server)
-from metrics import login_success, login_failure, active_users
+# ✅ import metrics (IMPORTANT)
+from metrics import (
+    login_success, login_failure, active_users,
+    file_upload_total, preprocess_total, dataset_rows
+)
 
 st.title("Pharmalytics Login")
 
-# Session handling
+# Session
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
@@ -17,7 +21,6 @@ if st.button("Login"):
 
     if username == "guest" and password == "guest123":
 
-        # Prevent double count
         if not st.session_state.logged_in:
             login_success.inc()
             active_users.inc()
@@ -25,8 +28,31 @@ if st.button("Login"):
 
         st.success("Login successful")
         sleep(1)
-        st.switch_page("pages/page1.py")
 
     else:
         login_failure.inc()
         st.error("Invalid credentials")
+
+
+# ---------------- FILE UPLOAD ----------------
+st.header("Upload Dataset")
+
+file = st.file_uploader("Upload CSV", type="csv")
+
+if file:
+    df = pd.read_csv(file)
+
+    # Metrics
+    file_upload_total.inc()
+    dataset_rows.set(len(df))
+
+    st.write(df)
+
+    if st.button("Preprocess"):
+        df = df.dropna()
+
+        preprocess_total.inc()
+        dataset_rows.set(len(df))
+
+        st.success("Preprocessing done")
+        st.write(df)
