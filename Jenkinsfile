@@ -7,21 +7,24 @@ pipeline {
 
     stages {
 
-       stage('Checkout Code') {
+        stage('Checkout Code') {
             steps {
-              deleteDir()   // 🔥 IMPORTANT: clears old workspace
+                deleteDir()
 
-              git branch: 'main',
-            url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
-           }
+                git branch: 'main',
+                    url: 'https://github.com/vasanthapandiyanrfitaacademy-ux/project_tasks.git'
+            }
         }
+
         stage('Docker Login') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-creds',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-creds',
+                        usernameVariable: 'USER',
+                        passwordVariable: 'PASS'
+                    )
+                ]) {
                     sh '''
                         echo "$PASS" | docker login -u "$USER" --password-stdin
                     '''
@@ -48,41 +51,40 @@ pipeline {
         }
 
         stage('Deploy with Docker Compose') {
-    steps {
-        sh '''
-            echo "Stopping old containers..."
-            docker compose down || true
+            steps {
+                sh '''
+                    echo "Stopping old containers..."
+                    docker compose down || true
 
-            echo "Removing unused containers..."
-            docker container prune -f
+                    echo "Removing stopped containers..."
+                    docker container prune -f
 
-            echo "Removing old images (except latest)..."
-            docker image prune -a -f
+                    echo "Removing unused images..."
+                    docker image prune -f
 
-            echo "Pulling latest image..."
-            docker compose pull
+                    echo "Pulling latest image..."
+                    docker compose pull
 
-            echo "Starting new containers..."
-            docker compose up -d --force-recreate
+                    echo "Starting new containers..."
+                    docker compose up -d --force-recreate
 
-            echo "Cleaning dangling images..."
-            docker image prune -f
+                    echo "Current running containers:"
+                    docker ps
 
-            echo "Current running containers:"
-            docker ps
-
-            echo "Available images:"
-            docker images
-        '''
+                    echo "Available images:"
+                    docker images
+                '''
+            }
+        }
     }
-}
+
     post {
         success {
-            echo "SUCCESS  FULL CI/CD WORKING"
+            echo "SUCCESS - Full CI/CD Working"
         }
 
         failure {
-            echo "FAILED  Check logs"
+            echo "FAILED - Check Logs"
         }
 
         always {
